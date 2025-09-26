@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent">
+
+  <androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="24dp"
+    tools:context=".ui.profile.ProfileCommuterActivity">
+
+    <ImageView
+      android:id="@+id/ivProfilePhotoCommuter"
+      android:layout_width="100dp"
+      android:layout_height="100dp"
+      android:src="@drawable/ic_menu_camera"
+      android:contentDescription="Profile picture"
+      app:layout_constraintTop_toTopOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+      android:id="@+id/btnUploadPhotoCommuter"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:text="Upload Photo"
+      app:layout_constraintTop_toBottomOf="@id/ivProfilePhotoCommuter"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintEnd_toEndOf="parent" />
+
+    <EditText
+      android:id="@+id/etCommuterName"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="24dp"
+      android:hint="Full Name"
+      android:inputType="textPersonName"
+      app:layout_constraintTop_toBottomOf="@id/btnUploadPhotoCommuter"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintEnd_toEndOf="parent" />
+
+    <EditText
+      android:id="@+id/etCommuterPhone"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="12dp"
+      android:hint="Phone"
+      android:inputType="phone"
+      app:layout_constraintTop_toBottomOf="@id/etCommuterName"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+      android:id="@+id/btnSaveCommuter"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="24dp"
+      android:text="Save"
+      app:layout_constraintTop_toBottomOf="@id/etCommuterPhone"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintBottom_toBottomOf="parent" />
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>
+
+

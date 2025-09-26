@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:padding="24dp"
+  tools:context=".ui.onboarding.Onboarding2Activity">
+
+  <TextView
+    android:id="@+id/tvTitle2"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:text="Real-time Tracking"
+    android:textSize="24sp"
+    android:textStyle="bold"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintTop_toTopOf="parent" />
+
+  <ImageView
+    android:id="@+id/ivIllustration2"
+    android:layout_width="0dp"
+    android:layout_height="0dp"
+    android:layout_marginTop="24dp"
+    android:contentDescription="Illustration"
+    android:scaleType="centerInside"
+    android:src="@drawable/ic_menu_mylocation"
+    app:layout_constraintTop_toBottomOf="@id/tvTitle2"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintBottom_toTopOf="@id/tvDescription2"
+    app:layout_constraintVertical_bias="0.0" />
+
+  <TextView
+    android:id="@+id/tvDescription2"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16dp"
+    android:text="Track rides and arrivals effortlessly."
+    android:textAlignment="center"
+    android:textSize="16sp"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintBottom_toTopOf="@id/groupButtons2" />
+
+  <LinearLayout
+    android:id="@+id/groupButtons2"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:layout_marginTop="24dp"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintBottom_toBottomOf="parent">
+
+    <Button
+      android:id="@+id/btnSkip2"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:text="Skip" />
+
+    <Space
+      android:layout_width="16dp"
+      android:layout_height="0dp" />
+
+    <Button
+      android:id="@+id/btnNext2"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:text="Next" />
+  </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+

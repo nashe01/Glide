@@ -1,0 +1,45 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Android Studio/IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Log/Cache
+*.log
+.cache/
+
+# Local configuration
+local.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# NDK/External build
+.externalNativeBuild/
+.cxx/
+
+# Generated assets
+app/build/
+**/generated/
+
+# APKs/AABs
+*.apk
+*.ap_
+*.aab
+
+# Captures
+captures/
+
+# Keystores (do not commit real keystores)
+*.jks
+*.keystore
+
+# Misc
+*.swp
+*.swo

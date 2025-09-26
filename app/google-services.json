@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "48193856401",
+    "project_id": "glide-1c294",
+    "storage_bucket": "glide-1c294.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:48193856401:android:0ce5aaed5d1d028c4bf030",
+        "android_client_info": {
+          "package_name": "com.kodelink.glide"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGPLOFFQgHGE4YfQhXUz58qlQLY2ytYlk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

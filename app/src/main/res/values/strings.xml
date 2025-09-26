@@ -1,0 +1,39 @@
+<resources>
+    <string name="app_name">Glide</string>
+    <string name="splash_logo_desc">App logo</string>
+
+    <!-- Onboarding -->
+    <string name="onb1_title">Welcome to Glide</string>
+    <string name="onb1_desc">Your journey made simple.</string>
+    <string name="onb2_title">Real-time Tracking</string>
+    <string name="onb2_desc">Track rides and arrivals effortlessly.</string>
+    <string name="onb3_title">Get Started</string>
+    <string name="onb3_desc">Create your account to ride or drive.</string>
+    <string name="action_skip">Skip</string>
+    <string name="action_next">Next</string>
+    <string name="action_get_started">Get Started</string>
+
+    <!-- Auth -->
+    <string name="login_title">Login</string>
+    <string name="hint_email_phone">Email or Phone</string>
+    <string name="hint_password">Password</string>
+    <string name="action_login">Login</string>
+    <string name="action_forgot_password">Forgot Password?</string>
+    <string name="action_sign_up">Sign Up</string>
+    <string name="signup_title">Create Account</string>
+    <string name="hint_name">Full Name</string>
+    <string name="hint_phone">Phone</string>
+    <string name="hint_email">Email</string>
+    <string name="action_create_account">Create Account</string>
+    <string name="action_back_to_login">Back to Login</string>
+    <string name="label_role">Role</string>
+
+    <!-- Profile -->
+    <string name="upload_photo">Upload Photo</string>
+    <string name="save">Save</string>
+    <string name="profile_picture_desc">Profile picture</string>
+    <string name="car_type">Car Type</string>
+    <string name="car_color">Car Color</string>
+    <string name="car_plate">Plate Number</string>
+    <string name="upload_license">Upload License</string>
+</resources>
