@@ -21,6 +21,13 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(new Intent(LoginActivity.this, SignupActivity.class));
             });
         }
+
+        View forgot = findViewById(R.id.tvForgotPassword);
+        if (forgot != null) {
+            forgot.setOnClickListener(v -> {
+                startActivity(new Intent(LoginActivity.this, ForgotPasswordActivity.class));
+            });
+        }
     }
 }
 

@@ -1,0 +1,26 @@
+Glide - Phase 1 Summary
+
+What we have done so far
+- Splash screen: MainActivity shows activity_splash and navigates after ~1.5s
+- Onboarding flow: OnboardingActivity with 3 screens (activity_onboarding1/2/3); Skip/Get Started go to Login
+- Authentication screens:
+  - LoginActivity -> activity_login (links to Signup and Forgot Password)
+  - SignupActivity -> activity_signup (back to Login)
+  - ForgotPasswordActivity -> activity_forgot_password (basic input validation + mock toast)
+- Navigation: Splash -> Onboarding -> Login -> (Signup / Forgot Password)
+- Manifest: Activities registered (MainActivity, OnboardingActivity, LoginActivity, SignupActivity, ForgotPasswordActivity)
+- UI: Edge-to-edge enabled across activities
+
+Phase 1 screens
+- Splash
+- Onboarding (3 screens)
+- Login
+- Signup
+- Forgot Password
+- Profile setup (Commuter) — layout present: activity_profile_commuter.xml
+- Profile setup (Driver) — layout present: activity_profile_driver.xml
+
+Notes / next steps
+- Implement Activities for Profile (Commuter/Driver) and add to manifest
+- Link Signup/Login to appropriate Profile setup based on user type
+- Replace mock toasts with real backend calls when available
