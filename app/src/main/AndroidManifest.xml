@@ -33,6 +33,12 @@
         <activity
             android:name=".ForgotPasswordActivity"
             android:exported="false" />
+        <activity
+            android:name=".ProfileCommuterActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProfileDriverActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
