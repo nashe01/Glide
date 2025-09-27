@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -11,6 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -21,9 +24,10 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
-public class DashboardDriverActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class DashboardDriverActivity extends AppCompatActivity implements OnMapReadyCallback, NavigationView.OnNavigationItemSelectedListener {
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
     private static final String PREFS_NAME = "DriverPrefs";
@@ -35,6 +39,8 @@ public class DashboardDriverActivity extends AppCompatActivity implements OnMapR
     private MaterialButton btnMenu;
     private SwitchMaterial switchAvailability;
     private TextView tvAvailabilityStatus;
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
     private SharedPreferences prefs;
 
     @Override
@@ -47,6 +53,8 @@ public class DashboardDriverActivity extends AppCompatActivity implements OnMapR
         btnMenu = findViewById(R.id.btnMenu);
         switchAvailability = findViewById(R.id.switchAvailability);
         tvAvailabilityStatus = findViewById(R.id.tvAvailabilityStatus);
+        drawerLayout = findViewById(R.id.drawerLayout);
+        navigationView = findViewById(R.id.navigationView);
 
         // Initialize preferences
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
@@ -58,10 +66,12 @@ public class DashboardDriverActivity extends AppCompatActivity implements OnMapR
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
 
+        // Set up navigation drawer
+        navigationView.setNavigationItemSelectedListener(this);
+        
         // Set up button listeners
         btnMenu.setOnClickListener(v -> {
-            // TODO: Implement menu functionality
-            Toast.makeText(this, "Menu clicked", Toast.LENGTH_SHORT).show();
+            drawerLayout.openDrawer(GravityCompat.START);
         });
 
         // Set up availability toggle
@@ -85,6 +95,9 @@ public class DashboardDriverActivity extends AppCompatActivity implements OnMapR
         int color = isAvailable ? getResources().getColor(R.color.green) : getResources().getColor(R.color.red);
         tvAvailabilityStatus.setText(status);
         tvAvailabilityStatus.setTextColor(color);
+
+        // Update header with user role
+        updateNavigationHeader();
 
         // Request location permission
         requestLocationPermission();
@@ -171,5 +184,30 @@ public class DashboardDriverActivity extends AppCompatActivity implements OnMapR
     public void onLowMemory() {
         super.onLowMemory();
         mapView.onLowMemory();
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        
+        if (id == R.id.nav_notifications) {
+            Toast.makeText(this, "Notifications clicked", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.nav_settings) {
+            Toast.makeText(this, "Settings clicked", Toast.LENGTH_SHORT).show();
+        }
+        
+        drawerLayout.closeDrawer(GravityCompat.START);
+        return true;
+    }
+
+    private void updateNavigationHeader() {
+        SharedPreferences authPrefs = getSharedPreferences("MockAuth", MODE_PRIVATE);
+        String currentUserPhone = authPrefs.getString("current_user_phone", "");
+        String role = authPrefs.getString(currentUserPhone + "_role", "driver");
+        
+        TextView tvUserRole = navigationView.getHeaderView(0).findViewById(R.id.tvUserRole);
+        if (tvUserRole != null) {
+            tvUserRole.setText(role.equals("driver") ? "Driver" : "Commuter");
+        }
     }
 }
