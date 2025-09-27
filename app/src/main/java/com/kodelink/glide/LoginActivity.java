@@ -80,9 +80,9 @@ public class LoginActivity extends AppCompatActivity {
             
             btnLogin.setEnabled(true);
             if ("driver".equalsIgnoreCase(role)) {
-                startActivity(new Intent(LoginActivity.this, ProfileDriverActivity.class));
+                startActivity(new Intent(LoginActivity.this, DashboardDriverActivity.class));
             } else {
-                startActivity(new Intent(LoginActivity.this, ProfileCommuterActivity.class));
+                startActivity(new Intent(LoginActivity.this, HomeCommuterActivity.class));
             }
             finish();
         }, 1500);
