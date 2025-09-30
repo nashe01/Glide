@@ -85,3 +85,4 @@ public class DataInitializer {
         databaseRef.child("commuters").child("commuter_002").setValue(commuter2);
     }
 }
+
