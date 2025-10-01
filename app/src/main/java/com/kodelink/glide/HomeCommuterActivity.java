@@ -1,9 +1,12 @@
 package com.kodelink.glide;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -27,10 +30,21 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.AutocompletePrediction;
+import com.google.android.libraries.places.api.model.AutocompleteSessionToken;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.model.RectangularBounds;
+import com.google.android.libraries.places.api.net.FetchPlaceRequest;
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest;
+import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,10 +56,20 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
     private GoogleMap googleMap;
     private FusedLocationProviderClient fusedLocationClient;
     private MaterialButton btnMenu;
+    private MaterialButton btnSearch;
     private TextInputEditText etSearch;
+    private TextInputLayout searchLayout;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private SharedPreferences prefs;
+    
+    // Places API variables
+    private PlacesClient placesClient;
+    private AutocompleteSessionToken sessionToken;
+    
+    // Suggestions UI
+    private RecyclerView rvSuggestions;
+    private PlaceSuggestionAdapter suggestionAdapter;
     
     // Ride request workflow variables
     private LatLng currentLocation;
@@ -66,7 +90,10 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
         // Initialize views
         mapView = findViewById(R.id.mapView);
         btnMenu = findViewById(R.id.btnMenu);
+        btnSearch = findViewById(R.id.btnSearch);
         etSearch = findViewById(R.id.etSearch);
+        searchLayout = findViewById(R.id.searchLayout);
+        rvSuggestions = findViewById(R.id.rvSuggestions);
         drawerLayout = findViewById(R.id.drawerLayout);
         navigationView = findViewById(R.id.navigationView);
 
@@ -76,6 +103,12 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
 
         // Initialize Firebase service
         firebaseService = FirebaseService.getInstance();
+        
+        // Initialize Places API
+        initializePlacesAPI();
+        
+        // Initialize suggestions RecyclerView
+        setupSuggestionsRecyclerView();
         
         // Initialize sample data (for testing)
         DataInitializer.initializeSampleData(this);
@@ -130,6 +163,11 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
             }
             return true;
         });
+        
+        // Set up map click listener to hide suggestions
+        googleMap.setOnMapClickListener(latLng -> {
+            hideSuggestions();
+        });
     }
 
     private void requestLocationPermission() {
@@ -177,8 +215,26 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
                             
                             // Update commuter location in Firebase
                             updateCommuterLocationInFirebase();
+                            
+                            // Update Places API session token with current location context
+                            updatePlacesAPIContext();
                         }
+                    })
+                    .addOnFailureListener(exception -> {
+                        Log.e("LocationError", "Failed to get current location: " + exception.getMessage());
+                        Toast.makeText(this, "Could not get your current location. Search will work without location bias.", Toast.LENGTH_SHORT).show();
                     });
+        }
+    }
+
+    /**
+     * Update Places API context with current location for better search results
+     */
+    private void updatePlacesAPIContext() {
+        if (currentLocation != null && placesClient != null) {
+            // Create a new session token with current location context
+            sessionToken = AutocompleteSessionToken.newInstance();
+            Log.d("PlacesAPI", "Updated Places API context with current location: " + currentLocation.toString());
         }
     }
     
@@ -406,13 +462,308 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
         });
     }
 
+    /**
+     * Initialize Google Places API
+     */
+    private void initializePlacesAPI() {
+        // Initialize Places API
+        if (!Places.isInitialized()) {
+            Places.initialize(getApplicationContext(), getString(R.string.google_maps_key));
+        }
+        placesClient = Places.createClient(this);
+        sessionToken = AutocompleteSessionToken.newInstance();
+    }
+
+    /**
+     * Set up comprehensive search functionality with Places Autocomplete
+     */
     private void setupSearchFunctionality() {
-        // Set up search bar functionality
-        etSearch.setOnClickListener(v -> {
-            // Here you would implement address search functionality
-            // For now, we'll just show a toast
-            Toast.makeText(this, "Search functionality will be implemented", Toast.LENGTH_SHORT).show();
+        // Set up search button click listener
+        btnSearch.setOnClickListener(v -> {
+            hideSuggestions(); // Hide suggestions when searching
+            String searchQuery = etSearch.getText().toString().trim();
+            if (!searchQuery.isEmpty()) {
+                performLocationSearch(searchQuery);
+            } else {
+                Toast.makeText(this, "Please enter a location to search", Toast.LENGTH_SHORT).show();
+            }
         });
+
+        // Set up text change listener for autocomplete suggestions
+        etSearch.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s.toString().trim();
+                if (query.length() >= 2) {
+                    getAutocompletePredictions(query);
+                } else {
+                    hideSuggestions();
+                }
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
+        });
+
+        // Set up search field click listener to show autocomplete
+        etSearch.setOnClickListener(v -> {
+            String currentText = etSearch.getText().toString().trim();
+            if (currentText.length() >= 2) {
+                getAutocompletePredictions(currentText);
+            }
+        });
+    }
+
+    /**
+     * Get autocomplete predictions from Google Places API
+     */
+    private void getAutocompletePredictions(String query) {
+        if (placesClient == null || query.length() < 2) {
+            return;
+        }
+
+        // Create bounds based on current location if available
+        RectangularBounds bounds = null;
+        if (currentLocation != null) {
+            // Create a 50km radius around current location
+            double lat = currentLocation.latitude;
+            double lng = currentLocation.longitude;
+            double offset = 0.5; // Approximately 50km
+            
+            bounds = RectangularBounds.newInstance(
+                new LatLng(lat - offset, lng - offset),
+                new LatLng(lat + offset, lng + offset)
+            );
+        }
+
+        // Build the autocomplete request
+        FindAutocompletePredictionsRequest request = FindAutocompletePredictionsRequest.builder()
+                .setQuery(query)
+                .setSessionToken(sessionToken)
+                .setLocationBias(bounds)
+                .build();
+
+        // Execute the request
+        placesClient.findAutocompletePredictions(request)
+                .addOnSuccessListener(response -> {
+                    if (response.getAutocompletePredictions() != null && 
+                        !response.getAutocompletePredictions().isEmpty()) {
+                        showAutocompleteSuggestions(response.getAutocompletePredictions());
+                    }
+                })
+                .addOnFailureListener(exception -> {
+                    handleNetworkError("Autocomplete predictions", exception);
+                });
+    }
+
+    /**
+     * Set up the suggestions RecyclerView
+     */
+    private void setupSuggestionsRecyclerView() {
+        suggestionAdapter = new PlaceSuggestionAdapter(new PlaceSuggestionAdapter.OnSuggestionClickListener() {
+            @Override
+            public void onSuggestionClick(AutocompletePrediction prediction) {
+                // Hide suggestions
+                hideSuggestions();
+                
+                // Update search field with selected suggestion
+                etSearch.setText(prediction.getPrimaryText(null).toString());
+                
+                // Fetch place details and move map
+                fetchPlaceDetails(prediction.getPlaceId());
+            }
+        });
+        
+        rvSuggestions.setLayoutManager(new LinearLayoutManager(this));
+        rvSuggestions.setAdapter(suggestionAdapter);
+    }
+
+    /**
+     * Show autocomplete suggestions in the dropdown
+     */
+    private void showAutocompleteSuggestions(List<AutocompletePrediction> predictions) {
+        if (predictions.isEmpty()) {
+            hideSuggestions();
+            return;
+        }
+
+        // Update adapter with new suggestions
+        suggestionAdapter.updateSuggestions(predictions);
+        
+        // Show the suggestions RecyclerView
+        rvSuggestions.setVisibility(View.VISIBLE);
+        
+        Log.d("PlacesAPI", "Showing " + predictions.size() + " suggestions");
+    }
+
+    /**
+     * Hide the suggestions dropdown
+     */
+    private void hideSuggestions() {
+        rvSuggestions.setVisibility(View.GONE);
+        suggestionAdapter.clearSuggestions();
+    }
+
+    /**
+     * Perform location search and move map camera to the result
+     */
+    private void performLocationSearch(String query) {
+        // Validate input
+        if (!isValidSearchQuery(query)) {
+            return;
+        }
+
+        // Check network connectivity
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "No internet connection. Please check your network and try again.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (placesClient == null) {
+            Toast.makeText(this, "Places API not initialized", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show loading state
+        btnSearch.setEnabled(false);
+        btnSearch.setText("...");
+
+        // For this implementation, we'll use the first prediction
+        // In a full implementation, you'd let the user select from a dropdown
+        FindAutocompletePredictionsRequest request = FindAutocompletePredictionsRequest.builder()
+                .setQuery(query)
+                .setSessionToken(sessionToken)
+                .build();
+
+        placesClient.findAutocompletePredictions(request)
+                .addOnSuccessListener(response -> {
+                    if (response.getAutocompletePredictions() != null && 
+                        !response.getAutocompletePredictions().isEmpty()) {
+                        
+                        // Get the first prediction
+                        AutocompletePrediction prediction = response.getAutocompletePredictions().get(0);
+                        String placeId = prediction.getPlaceId();
+                        
+                        // Fetch the full place details
+                        fetchPlaceDetails(placeId);
+                    } else {
+                        Toast.makeText(this, "No results found for: " + query, Toast.LENGTH_SHORT).show();
+                        resetSearchButton();
+                    }
+                })
+                .addOnFailureListener(exception -> {
+                    handleNetworkError("Location search", exception);
+                    resetSearchButton();
+                });
+    }
+
+    /**
+     * Fetch detailed place information and move map camera
+     */
+    private void fetchPlaceDetails(String placeId) {
+        List<Place.Field> placeFields = java.util.Arrays.asList(
+            Place.Field.ID,
+            Place.Field.NAME,
+            Place.Field.LAT_LNG,
+            Place.Field.ADDRESS
+        );
+
+        FetchPlaceRequest request = FetchPlaceRequest.builder(placeId, placeFields)
+                .setSessionToken(sessionToken)
+                .build();
+
+        placesClient.fetchPlace(request)
+                .addOnSuccessListener(response -> {
+                    Place place = response.getPlace();
+                    LatLng placeLatLng = place.getLatLng();
+                    
+                    if (placeLatLng != null) {
+                        // Move camera to the searched location
+                        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(placeLatLng, 15f));
+                        
+                        // Set this as the destination
+                        setDestination(placeLatLng);
+                        
+                        // Update search field with the place name
+                        etSearch.setText(place.getName());
+                        
+                        Toast.makeText(this, "Found: " + place.getName(), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Could not get location details", Toast.LENGTH_SHORT).show();
+                    }
+                    resetSearchButton();
+                })
+                .addOnFailureListener(exception -> {
+                    handleNetworkError("Place details fetch", exception);
+                    resetSearchButton();
+                });
+    }
+
+    /**
+     * Reset search button to normal state
+     */
+    private void resetSearchButton() {
+        btnSearch.setEnabled(true);
+        btnSearch.setText("🔍");
+    }
+
+    /**
+     * Check if device has network connectivity
+     */
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager != null) {
+            NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+            return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+        }
+        return false;
+    }
+
+    /**
+     * Handle network-related errors gracefully
+     */
+    private void handleNetworkError(String operation, Exception exception) {
+        Log.e("NetworkError", operation + " failed: " + exception.getMessage());
+        
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "No internet connection. Please check your network and try again.", Toast.LENGTH_LONG).show();
+        } else {
+            String errorMessage = "Search failed. Please try again.";
+            if (exception.getMessage() != null) {
+                if (exception.getMessage().contains("API key")) {
+                    errorMessage = "API configuration error. Please contact support.";
+                } else if (exception.getMessage().contains("quota")) {
+                    errorMessage = "Search service temporarily unavailable. Please try again later.";
+                }
+            }
+            Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Validate search query input
+     */
+    private boolean isValidSearchQuery(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Check for minimum length
+        if (query.trim().length() < 2) {
+            Toast.makeText(this, "Please enter at least 2 characters to search", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        
+        // Check for maximum length to prevent abuse
+        if (query.length() > 100) {
+            Toast.makeText(this, "Search query too long. Please shorten your search.", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        
+        return true;
     }
 
     private double calculateDistance(LatLng point1, LatLng point2) {
