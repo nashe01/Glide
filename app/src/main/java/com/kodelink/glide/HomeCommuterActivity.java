@@ -325,6 +325,9 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
                 .position(destination)
                 .title("Destination"));
         
+        // Hide suggestions when destination is set
+        hideSuggestions();
+        
         // Move camera to show both current location and destination
         if (currentLocation != null) {
             // Calculate bounds to show both locations
@@ -484,6 +487,12 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String query = s.toString().trim();
+                // Don't show suggestions if destination is already selected
+                if (destinationLocation != null) {
+                    hideSuggestions();
+                    return;
+                }
+                
                 if (query.length() >= 2) {
                     getAutocompletePredictions(query);
                 } else {
@@ -497,6 +506,12 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
 
         // Set up search field click listener to show autocomplete
         etSearch.setOnClickListener(v -> {
+            // Don't show suggestions if destination is already selected
+            if (destinationLocation != null) {
+                hideSuggestions();
+                return;
+            }
+            
             String currentText = etSearch.getText().toString().trim();
             if (currentText.length() >= 2) {
                 getAutocompletePredictions(currentText);
@@ -603,6 +618,39 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
     private void hideSuggestions() {
         rvSuggestions.setVisibility(View.GONE);
         suggestionAdapter.clearSuggestions();
+    }
+    
+    /**
+     * Clear the current destination and reset search functionality
+     */
+    private void clearDestination() {
+        destinationLocation = null;
+        
+        // Remove destination marker
+        if (destinationMarker != null) {
+            destinationMarker.remove();
+            destinationMarker = null;
+        }
+        
+        // Clear driver markers
+        for (Marker marker : driverMarkers) {
+            marker.remove();
+        }
+        driverMarkers.clear();
+        availableDrivers.clear();
+        
+        // Hide driver info card
+        if (driverInfoCard != null) {
+            driverInfoCard.setVisibility(View.GONE);
+        }
+        
+        // Clear search field
+        etSearch.setText("");
+        
+        // Hide suggestions
+        hideSuggestions();
+        
+        Toast.makeText(this, "Destination cleared", Toast.LENGTH_SHORT).show();
     }
 
     /**
