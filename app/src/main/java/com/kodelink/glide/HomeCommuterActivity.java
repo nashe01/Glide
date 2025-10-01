@@ -56,7 +56,6 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
     private GoogleMap googleMap;
     private FusedLocationProviderClient fusedLocationClient;
     private MaterialButton btnMenu;
-    private MaterialButton btnSearch;
     private TextInputEditText etSearch;
     private TextInputLayout searchLayout;
     private DrawerLayout drawerLayout;
@@ -90,7 +89,6 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
         // Initialize views
         mapView = findViewById(R.id.mapView);
         btnMenu = findViewById(R.id.btnMenu);
-        btnSearch = findViewById(R.id.btnSearch);
         etSearch = findViewById(R.id.etSearch);
         searchLayout = findViewById(R.id.searchLayout);
         rvSuggestions = findViewById(R.id.rvSuggestions);
@@ -478,17 +476,6 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
      * Set up comprehensive search functionality with Places Autocomplete
      */
     private void setupSearchFunctionality() {
-        // Set up search button click listener
-        btnSearch.setOnClickListener(v -> {
-            hideSuggestions(); // Hide suggestions when searching
-            String searchQuery = etSearch.getText().toString().trim();
-            if (!searchQuery.isEmpty()) {
-                performLocationSearch(searchQuery);
-            } else {
-                Toast.makeText(this, "Please enter a location to search", Toast.LENGTH_SHORT).show();
-            }
-        });
-
         // Set up text change listener for autocomplete suggestions
         etSearch.addTextChangedListener(new android.text.TextWatcher() {
             @Override
@@ -514,6 +501,17 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
             if (currentText.length() >= 2) {
                 getAutocompletePredictions(currentText);
             }
+        });
+
+        // Set up search on Enter key press
+        etSearch.setOnEditorActionListener((v, actionId, event) -> {
+            String searchQuery = etSearch.getText().toString().trim();
+            if (!searchQuery.isEmpty()) {
+                hideSuggestions();
+                performLocationSearch(searchQuery);
+                return true;
+            }
+            return false;
         });
     }
 
@@ -627,9 +625,8 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
             return;
         }
 
-        // Show loading state
-        btnSearch.setEnabled(false);
-        btnSearch.setText("...");
+        // Show loading state in search field
+        etSearch.setEnabled(false);
 
         // For this implementation, we'll use the first prediction
         // In a full implementation, you'd let the user select from a dropdown
@@ -651,12 +648,12 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
                         fetchPlaceDetails(placeId);
                     } else {
                         Toast.makeText(this, "No results found for: " + query, Toast.LENGTH_SHORT).show();
-                        resetSearchButton();
+                        resetSearchField();
                     }
                 })
                 .addOnFailureListener(exception -> {
                     handleNetworkError("Location search", exception);
-                    resetSearchButton();
+                    resetSearchField();
                 });
     }
 
@@ -694,20 +691,19 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
                     } else {
                         Toast.makeText(this, "Could not get location details", Toast.LENGTH_SHORT).show();
                     }
-                    resetSearchButton();
+                    resetSearchField();
                 })
                 .addOnFailureListener(exception -> {
                     handleNetworkError("Place details fetch", exception);
-                    resetSearchButton();
+                    resetSearchField();
                 });
     }
 
     /**
-     * Reset search button to normal state
+     * Reset search field to normal state
      */
-    private void resetSearchButton() {
-        btnSearch.setEnabled(true);
-        btnSearch.setText("🔍");
+    private void resetSearchField() {
+        etSearch.setEnabled(true);
     }
 
     /**
