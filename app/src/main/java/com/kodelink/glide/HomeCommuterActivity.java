@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +28,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -203,10 +205,11 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
                         if (location != null) {
                             currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
                             
-                            // Add marker for current location
+                            // Add marker for current location (blue)
                             googleMap.addMarker(new MarkerOptions()
                                     .position(currentLocation)
-                                    .title("Your Location"));
+                                    .title("Your Location")
+                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
                             
                             // Move camera to current location
                             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
@@ -320,10 +323,11 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
             destinationMarker.remove();
         }
         
-        // Add new destination marker
+        // Add new destination marker (red)
         destinationMarker = googleMap.addMarker(new MarkerOptions()
                 .position(destination)
-                .title("Destination"));
+                .title("Destination")
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
         
         // Hide suggestions when destination is set
         hideSuggestions();
@@ -381,7 +385,8 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
                 Marker driverMarker = googleMap.addMarker(new MarkerOptions()
                         .position(driverLocation)
                         .title(driver.name)
-                        .snippet("Rating: " + driver.rating + " | Rides: " + driver.completedRides));
+                        .snippet("Rating: " + driver.rating + " | Rides: " + driver.completedRides)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
                 
                 // Set driver object as tag for click handling
                 driverMarker.setTag(driver);
@@ -582,6 +587,9 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
                 // Hide suggestions
                 hideSuggestions();
                 
+                // Hide keyboard
+                hideKeyboard();
+                
                 // Update search field with selected suggestion
                 etSearch.setText(prediction.getPrimaryText(null).toString());
                 
@@ -618,6 +626,16 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
     private void hideSuggestions() {
         rvSuggestions.setVisibility(View.GONE);
         suggestionAdapter.clearSuggestions();
+    }
+    
+    /**
+     * Hide the soft keyboard
+     */
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(etSearch.getWindowToken(), 0);
+        }
     }
     
     /**
