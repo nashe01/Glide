@@ -82,6 +82,7 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
     private String currentUserId;
     private MaterialCardView driverInfoCard;
     private Driver selectedDriver;
+    private CustomInfoWindowAdapter infoWindowAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,6 +153,10 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
             getCurrentLocation();
         }
         
+        // Set up custom info window adapter
+        infoWindowAdapter = new CustomInfoWindowAdapter(this, this::onRequestRide);
+        googleMap.setInfoWindowAdapter(infoWindowAdapter);
+        
         // Set up map long click listener for destination selection
         googleMap.setOnMapLongClickListener(this);
         
@@ -159,7 +164,8 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
         googleMap.setOnMarkerClickListener(marker -> {
             if (marker.getTag() != null && marker.getTag() instanceof Driver) {
                 selectedDriver = (Driver) marker.getTag();
-                showDriverInfoCard(selectedDriver);
+                // Show custom info window instead of automatically requesting ride
+                marker.showInfoWindow();
             }
             return true;
         });
@@ -219,6 +225,11 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
                             
                             // Update Places API session token with current location context
                             updatePlacesAPIContext();
+                            
+                            // Update info window adapter with current location
+                            if (infoWindowAdapter != null) {
+                                infoWindowAdapter.setCurrentLocation(currentLocation);
+                            }
                         }
                     })
                     .addOnFailureListener(exception -> {
@@ -396,22 +407,48 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
     }
 
     private void showDriverInfoCard(Driver driver) {
-        // This would show a bottom sheet or card with driver info
-        // For now, we'll show a simple dialog
-        String driverInfo = "Driver: " + driver.name + "\n" +
-                "Rating: " + driver.rating + " stars\n" +
-                "Completed Rides: " + driver.completedRides + "\n" +
-                "Distance: " + calculateDistance(currentLocation, new LatLng(driver.currentLocation.lat, driver.currentLocation.lng)) + " km";
+        // This method is now handled by the custom info window adapter
+        // The info window will be shown when marker is clicked
+    }
+    
+    /**
+     * Handle Request Ride button click from custom info window
+     */
+    private void onRequestRide(Driver driver) {
+        // Show immediate feedback that button was pressed
+        Toast.makeText(this, "Button pressed! Processing request...", Toast.LENGTH_SHORT).show();
         
-        // Create a simple dialog or bottom sheet here
-        // For now, we'll use a toast and then proceed to request ride
-        Toast.makeText(this, driverInfo, Toast.LENGTH_LONG).show();
+        // Add debugging logs
+        Log.d("RideRequest", "onRequestRide called for driver: " + driver.name);
+        Log.d("RideRequest", "currentLocation: " + (currentLocation != null ? currentLocation.toString() : "null"));
+        Log.d("RideRequest", "destinationLocation: " + (destinationLocation != null ? destinationLocation.toString() : "null"));
         
-        // Automatically request ride after showing info
+        if (currentLocation == null || destinationLocation == null) {
+            String message = "Please set your destination first";
+            if (currentLocation == null) message += " (current location missing)";
+            if (destinationLocation == null) message += " (destination missing)";
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            return;
+        }
+        
+        // Show immediate feedback
+        Toast.makeText(this, "Sending request to " + driver.name + "...", Toast.LENGTH_SHORT).show();
+        
+        // Hide the info window
+        for (Marker marker : driverMarkers) {
+            if (marker.getTag() == driver) {
+                marker.hideInfoWindow();
+                break;
+            }
+        }
+        
+        // Send ride request
         requestRide(driver);
     }
 
     private void requestRide(Driver driver) {
+        Log.d("RideRequest", "requestRide called for driver: " + driver.name);
+        
         if (currentLocation == null || destinationLocation == null) {
             Toast.makeText(this, "Please set your destination first", Toast.LENGTH_SHORT).show();
             return;
@@ -419,6 +456,8 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
         
         // Create ride request
         String rideId = "ride_" + System.currentTimeMillis();
+        Log.d("RideRequest", "Creating ride request with ID: " + rideId);
+        
         RideRequest rideRequest = new RideRequest(
                 rideId,
                 currentUserId,
@@ -428,19 +467,40 @@ public class HomeCommuterActivity extends AppCompatActivity implements OnMapRead
                 "pending"
         );
         
+        Log.d("RideRequest", "Ride request created: " + rideRequest.toString());
+        Log.d("RideRequest", "Sending to Firebase...");
+        
         // Send ride request to Firebase
         firebaseService.createRideRequest(rideRequest, new FirebaseService.DatabaseCallback() {
             @Override
             public void onSuccess(String message) {
-                Toast.makeText(HomeCommuterActivity.this, "Ride request sent to " + driver.name, Toast.LENGTH_SHORT).show();
+                Log.d("RideRequest", "Firebase success: " + message);
+                // Show prominent success message
+                showRideRequestSentMessage(driver.name);
                 showWaitingScreen(rideId);
             }
             
             @Override
             public void onError(String error) {
-                Toast.makeText(HomeCommuterActivity.this, "Failed to send ride request: " + error, Toast.LENGTH_SHORT).show();
+                Log.e("RideRequest", "Firebase error: " + error);
+                Toast.makeText(HomeCommuterActivity.this, "Failed to send ride request: " + error, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    /**
+     * Show a prominent message that ride request has been sent
+     */
+    private void showRideRequestSentMessage(String driverName) {
+        // Create a custom dialog to show the request sent message
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("🚗 Ride Request Sent!")
+                .setMessage("Your ride request has been sent to " + driverName + ".\n\nPlease wait for the driver to respond...")
+                .setPositiveButton("OK", (dialog, which) -> {
+                    dialog.dismiss();
+                })
+                .setCancelable(false)
+                .show();
     }
 
     private void showWaitingScreen(String rideId) {
